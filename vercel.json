@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/a/:agencyId",
+      "destination": "/index.html?agency=:agencyId"
+    }
+  ]
+}
