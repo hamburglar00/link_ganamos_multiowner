@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <base href="/" />
   <title>Ganamos</title>
+
   <link rel="icon" href="imagenes/logo.png" />
   <link rel="preload" as="image" href="imagenes/background.png">
   <link rel="preload" as="image" href="imagenes/perro.png">
@@ -33,7 +34,7 @@
       padding: 20px;
       border-radius: 12px;
       text-align: center;
-      max-width: 320px;
+      max-width: 360px;
       width: 100%;
       box-shadow: 0 16px 60px rgba(0,0,0,.55);
     }
@@ -51,11 +52,29 @@
 
   <script>
     /********************************************
-     * AGENCY ID DESDE URL (?agency=17)
+     * AGENCY ID DESDE URL (GENÉRICO, SIN DEFAULT)
+     * Soporta:
+     *   /?agency=123
+     *   /a/123
      ********************************************/
-    const urlParams = new URLSearchParams(window.location.search);
-    const AGENCY_ID = Number(urlParams.get("agency")) || 17; // default 17
-    console.log("Agency ID:", AGENCY_ID);
+    function getAgencyId() {
+      // 1) query ?agency=123
+      const q = new URLSearchParams(window.location.search);
+      const fromQuery = Number(q.get("agency"));
+      if (Number.isInteger(fromQuery) && fromQuery > 0) return fromQuery;
+
+      // 2) path /a/123
+      const m = window.location.pathname.match(/^\/a\/(\d+)(\/)?$/);
+      if (m) {
+        const fromPath = Number(m[1]);
+        if (Number.isInteger(fromPath) && fromPath > 0) return fromPath;
+      }
+
+      return null; // sin agency
+    }
+
+    const AGENCY_ID = getAgencyId();
+    console.log("Agency ID:", AGENCY_ID, "| path:", location.pathname, "| search:", location.search);
   </script>
 
   <script>
@@ -80,15 +99,45 @@
     <div class="gn-wrap" id="cardContainer"></div>
   </main>
 
-  <!-- Modal Telegram -->
+  <!-- Modal Telegram (también lo usamos para avisar "falta agency") -->
   <div id="telegramModal" role="dialog" aria-modal="true" aria-hidden="true">
     <div id="telegramModalContent">
-      <div id="telegramModalMsg">🚫 Telegram está desactivado por el momento. Probá por WhatsApp.</div>
+      <div id="telegramModalMsg">Mensaje</div>
       <button id="closeTelegramModal" type="button">Cerrar</button>
     </div>
   </div>
 
   <script>
+    /********************************************
+     * HELPERS MODAL
+     ********************************************/
+    const telegramModal = document.getElementById("telegramModal");
+    const telegramModalMsg = document.getElementById("telegramModalMsg");
+    const closeTelegramModal = document.getElementById("closeTelegramModal");
+
+    function openModal(msg) {
+      if (telegramModalMsg) telegramModalMsg.textContent = msg || "";
+      if (telegramModal) {
+        telegramModal.style.display = "flex";
+        telegramModal.setAttribute("aria-hidden", "false");
+      }
+    }
+    function closeModal() {
+      if (telegramModal) {
+        telegramModal.style.display = "none";
+        telegramModal.setAttribute("aria-hidden", "true");
+      }
+    }
+
+    if (closeTelegramModal) {
+      closeTelegramModal.addEventListener("click", closeModal);
+    }
+    if (telegramModal) {
+      telegramModal.addEventListener("click", (e) => {
+        if (e.target === telegramModal) closeModal();
+      });
+    }
+
     /********************************************
      * CONFIGURACIONES AGRUPADAS
      ********************************************/
@@ -96,8 +145,8 @@
       telegramEnabled: false,
       telegramDisabledMessage: "🚫 Telegram está desactivado por el momento. Probá por WhatsApp.",
 
-      // ✅ Ahora incluye agency dinámico
-      whatsappServiceUrl: `/api/get-random-phone?agency=${AGENCY_ID}`,
+      // ✅ GENÉRICO: solo setea URL si existe AGENCY_ID
+      whatsappServiceUrl: AGENCY_ID ? `/api/get-random-phone?agency=${AGENCY_ID}` : null,
 
       // Si no querés fallback, dejalo: []
       whatsappFallback: [{ phone: "+549", weight: 1 }],
@@ -185,48 +234,36 @@
     /********************************************
      * CONTROL TELEGRAM (POP-UP)
      ********************************************/
-    const telegramModal = document.getElementById("telegramModal");
-    const telegramModalMsg = document.getElementById("telegramModalMsg");
-    const closeTelegramModal = document.getElementById("closeTelegramModal");
-
     const btnTelegram = document.getElementById("btnTelegram");
     if (btnTelegram) {
       btnTelegram.addEventListener("click", (e) => {
         if (!CONFIG.telegramEnabled) {
           e.preventDefault();
           e.stopPropagation();
-          if (telegramModalMsg) telegramModalMsg.textContent = CONFIG.telegramDisabledMessage;
-          if (telegramModal) {
-            telegramModal.style.display = "flex";
-            telegramModal.setAttribute("aria-hidden", "false");
-          }
-        }
-      });
-    }
-
-    if (closeTelegramModal) {
-      closeTelegramModal.addEventListener("click", () => {
-        if (telegramModal) {
-          telegramModal.style.display = "none";
-          telegramModal.setAttribute("aria-hidden", "true");
-        }
-      });
-    }
-
-    // Cerrar modal tocando fuera
-    if (telegramModal) {
-      telegramModal.addEventListener("click", (e) => {
-        if (e.target === telegramModal) {
-          telegramModal.style.display = "none";
-          telegramModal.setAttribute("aria-hidden", "true");
+          openModal(CONFIG.telegramDisabledMessage);
         }
       });
     }
 
     /********************************************
+     * SI FALTA AGENCY, AVISAMOS Y DESHABILITAMOS CONTACTO
+     ********************************************/
+    if (!AGENCY_ID) {
+      // Mensaje claro para links sin /a/<id> ni ?agency=
+      openModal("⚠️ Falta el parámetro de agencia en la URL.\nUsá un link del tipo /a/<id> (por ejemplo: /a/123).");
+
+      const btnContactarMissing = document.getElementById("btnContactar");
+      if (btnContactarMissing) {
+        btnContactarMissing.style.opacity = "0.65";
+        btnContactarMissing.style.pointerEvents = "none";
+        btnContactarMissing.title = "Falta agency en la URL";
+      }
+    }
+
+    /********************************************
      * LÓGICA WHATSAPP (con agency + cache por agency)
      ********************************************/
-    if (design === "whatsapp") {
+    if (design === "whatsapp" && AGENCY_ID && CONFIG.whatsappServiceUrl) {
       const SERVICE_URL = CONFIG.whatsappServiceUrl;
       const FALLBACK = CONFIG.whatsappFallback;
       const TTL_MS = CONFIG.whatsappTTL;
@@ -250,7 +287,7 @@
       }
 
       function parseApiPayload(data) {
-        // ✅ Formato nuevo de tu API: { number: "...", name: "..."}
+        // ✅ Formato nuevo de tu API: { number: "...", name: "..." }
         if (data && typeof data === "object" && ("number" in data) && data.number != null) {
           return [{ phone: String(data.number), weight: 1 }];
         }
