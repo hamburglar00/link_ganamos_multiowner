@@ -37,6 +37,7 @@
       max-width: 360px;
       width: 100%;
       box-shadow: 0 16px 60px rgba(0,0,0,.55);
+      white-space: pre-line;
     }
     #telegramModal button {
       margin-top: 12px;
@@ -63,8 +64,8 @@
       const fromQuery = Number(q.get("agency"));
       if (Number.isInteger(fromQuery) && fromQuery > 0) return fromQuery;
 
-      // 2) path /a/123
-      const m = window.location.pathname.match(/^\/a\/(\d+)(\/)?$/);
+      // 2) path /a/123 (tolerante)
+      const m = window.location.pathname.match(/\/a\/(\d+)/);
       if (m) {
         const fromPath = Number(m[1]);
         if (Number.isInteger(fromPath) && fromPath > 0) return fromPath;
@@ -99,7 +100,7 @@
     <div class="gn-wrap" id="cardContainer"></div>
   </main>
 
-  <!-- Modal Telegram (también lo usamos para avisar "falta agency") -->
+  <!-- Modal (lo usamos para: falta agency / telegram no disponible) -->
   <div id="telegramModal" role="dialog" aria-modal="true" aria-hidden="true">
     <div id="telegramModalContent">
       <div id="telegramModalMsg">Mensaje</div>
@@ -142,9 +143,6 @@
      * CONFIGURACIONES AGRUPADAS
      ********************************************/
     const CONFIG = {
-      telegramEnabled: false,
-      telegramDisabledMessage: "🚫 Telegram está desactivado por el momento. Probá por WhatsApp.",
-
       // ✅ GENÉRICO: solo setea URL si existe AGENCY_ID
       whatsappServiceUrl: AGENCY_ID ? `/api/get-random-phone?agency=${AGENCY_ID}` : null,
 
@@ -170,8 +168,12 @@
                 <a href="https://ganamosnet.org" target="_blank" rel="noopener" class="gn-btn gn-btn-outline">
                   <img src="imagenes/rocket_1f680.png" alt="" class="wa-ic"> JUGAR AHORA
                 </a>
-                <a href="https://t.me/TU_bot?start=hola" target="_blank" rel="noopener"
-                   id="btnTelegram"
+
+                <!-- ✅ Telegram dinámico por agency: href se setea por JS -->
+                <a href="#"
+                   target="_blank"
+                   rel="noopener"
+                   data-telegram="1"
                    class="gn-btn gn-btn-telegram" style="position:relative;">
                   <img src="imagenes/telegram.png" alt="" class="wa-ic"> TELEGRAM
                   <span style="
@@ -209,11 +211,15 @@
                 ¿Aún no tenés Telegram? Descargala y empezá a ganar.
               </p>
               <div class="gn-actions" style="max-width:200px;margin:20px auto;">
-                <a href="https://t.me/tu_bot?start=hola" target="_blank"
-                   id="btnTelegram"
+                <!-- ✅ Telegram dinámico por agency: href se setea por JS -->
+                <a href="#"
+                   target="_blank"
+                   rel="noopener"
+                   data-telegram="1"
                    class="gn-btn gn-btn-telegram">
                   <img src="imagenes/telegram.png" alt="" class="wa-ic"> TELEGRAM
                 </a>
+
                 <a href="https://ganamosnet.one" target="_blank" rel="noopener" class="gn-btn gn-btn-outline">
                   <img src="imagenes/rocket_1f680.png" alt="" class="wa-ic"> JUGAR AHORA
                 </a>
@@ -232,24 +238,9 @@
     document.getElementById("cardContainer").innerHTML = CONFIG.designs[design].render();
 
     /********************************************
-     * CONTROL TELEGRAM (POP-UP)
-     ********************************************/
-    const btnTelegram = document.getElementById("btnTelegram");
-    if (btnTelegram) {
-      btnTelegram.addEventListener("click", (e) => {
-        if (!CONFIG.telegramEnabled) {
-          e.preventDefault();
-          e.stopPropagation();
-          openModal(CONFIG.telegramDisabledMessage);
-        }
-      });
-    }
-
-    /********************************************
      * SI FALTA AGENCY, AVISAMOS Y DESHABILITAMOS CONTACTO
      ********************************************/
     if (!AGENCY_ID) {
-      // Mensaje claro para links sin /a/<id> ni ?agency=
       openModal("⚠️ Falta el parámetro de agencia en la URL.\nUsá un link del tipo /a/<id> (por ejemplo: /a/123).");
 
       const btnContactarMissing = document.getElementById("btnContactar");
@@ -261,6 +252,68 @@
     }
 
     /********************************************
+     * TELEGRAM POR AGENCY DESDE /telegram.json
+     * (guardás URL completa)
+     ********************************************/
+    async function loadTelegramUrlForAgency(agencyId) {
+      if (!agencyId) return null;
+
+      const CACHE_KEY = "telegram_map_cache:v1";
+      const CACHE_TTL = 10 * 60 * 1000;
+
+      try {
+        const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
+        if (cached?.ts && (Date.now() - cached.ts < CACHE_TTL) && cached.map) {
+          const url = cached.map[String(agencyId)];
+          return typeof url === "string" && url.startsWith("https://t.me/") ? url : null;
+        }
+      } catch {}
+
+      try {
+        const res = await fetch("/telegram.json", { cache: "no-store" });
+        if (!res.ok) return null;
+
+        const map = await res.json();
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), map })); } catch {}
+
+        const url = map?.[String(agencyId)];
+        return typeof url === "string" && url.startsWith("https://t.me/") ? url : null;
+      } catch {
+        return null;
+      }
+    }
+
+    let TELEGRAM_URL = null;
+
+    (async () => {
+      TELEGRAM_URL = await loadTelegramUrlForAgency(AGENCY_ID);
+
+      document.querySelectorAll('a[data-telegram="1"]').forEach((a) => {
+        if (TELEGRAM_URL) {
+          a.href = TELEGRAM_URL;
+          a.dataset.enabled = "1";
+        } else {
+          a.href = "#";
+          a.dataset.enabled = "0";
+        }
+      });
+    })();
+
+    /********************************************
+     * CONTROL TELEGRAM (dinámico por agency)
+     ********************************************/
+    document.addEventListener("click", (e) => {
+      const a = e.target?.closest?.('a[data-telegram="1"]');
+      if (!a) return;
+
+      if (!TELEGRAM_URL) {
+        e.preventDefault();
+        e.stopPropagation();
+        openModal("❌ Telegram no disponible para esta agencia por el momento.");
+      }
+    });
+
+    /********************************************
      * LÓGICA WHATSAPP (con agency + cache por agency)
      ********************************************/
     if (design === "whatsapp" && AGENCY_ID && CONFIG.whatsappServiceUrl) {
@@ -268,7 +321,6 @@
       const FALLBACK = CONFIG.whatsappFallback;
       const TTL_MS = CONFIG.whatsappTTL;
 
-      // ✅ cache separado por agency
       const LS_KEY = `active_whatsapp_numbers_by_agency:${AGENCY_ID}`;
 
       function fetchWithTimeout(url, opt = {}, ms = 2500) {
@@ -287,16 +339,12 @@
       }
 
       function parseApiPayload(data) {
-        // ✅ Formato nuevo de tu API: { number: "...", name: "..." }
         if (data && typeof data === "object" && ("number" in data) && data.number != null) {
           return [{ phone: String(data.number), weight: 1 }];
         }
-
-        // Formato viejo: { phone_number: "..." }
         if (data && typeof data === "object" && (typeof data.phone_number === "string" || typeof data.phone_number === "number")) {
           return [{ phone: String(data.phone_number), weight: 1 }];
         }
-
         if (typeof data === "string") return [{ phone: data, weight: 1 }];
 
         const arr =
