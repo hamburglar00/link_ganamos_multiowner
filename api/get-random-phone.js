@@ -3,6 +3,7 @@
 // ✅ agency ES OBLIGATORIO (?agency=XX)
 // ❌ NO defaults
 // ✅ Plan A/B/C/D
+// ✅ Lee desde load.whatsapp
 
 const CONFIG = {
   BRAND_NAME: "Ganamos",
@@ -33,6 +34,7 @@ async function fetchJsonWithTimeout(url, timeoutMs) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   const started = Date.now();
+
   try {
     const res = await fetch(url, {
       headers: { "Cache-Control": "no-store" },
@@ -61,9 +63,6 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store, max-age=0");
   res.setHeader("Pragma", "no-cache");
 
-  // ============================================================
-  // ✅ agency ES OBLIGATORIO
-  // ============================================================
   const agencyId = Number(req.query.agency);
 
   if (!Number.isInteger(agencyId) || agencyId <= 0) {
@@ -78,9 +77,6 @@ export default async function handler(req, res) {
   try {
     const API_URL = `${CONFIG.UPSTREAM_BASE}/agency/${agencyId}/random-contact`;
 
-    // ============================================================
-    // PLAN A: upstream con retry
-    // ============================================================
     let data = null;
     let upstreamMeta = { attempts: 0, last_error: null };
 
@@ -98,11 +94,9 @@ export default async function handler(req, res) {
 
     if (!data) throw new Error("Upstream no respondió");
 
-    // ============================================================
-    // PLAN B: whatsapp normal
-    // ============================================================
-    const normalList = Array.isArray(data?.whatsapp) ? data.whatsapp : [];
-    if (!normalList.length) throw new Error("whatsapp vacío");
+    // PLAN B: load.whatsapp
+    const normalList = Array.isArray(data?.load?.whatsapp) ? data.load.whatsapp : [];
+    if (!normalList.length) throw new Error("load.whatsapp vacío");
 
     const rawPhone = pickRandom(normalList);
     const phone = normalizePhone(rawPhone);
@@ -110,7 +104,7 @@ export default async function handler(req, res) {
 
     const meta = {
       agency_id: agencyId,
-      source: "whatsapp",
+      source: "load.whatsapp",
       ts: new Date().toISOString(),
       normal_len: normalList.length,
     };
@@ -124,9 +118,6 @@ export default async function handler(req, res) {
       ms: Date.now() - startedAt,
     });
   } catch (err) {
-    // ============================================================
-    // PLAN C: last good por agency
-    // ============================================================
     if (lastGood?.number) {
       return res.status(200).json({
         number: lastGood.number,
@@ -138,9 +129,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // ============================================================
-    // PLAN D: soporte
-    // ============================================================
     if (CONFIG.SUPPORT_FALLBACK_ENABLED) {
       return res.status(200).json({
         number: CONFIG.SUPPORT_FALLBACK_NUMBER,
