@@ -3,7 +3,9 @@
 
 const TELEGRAM_MAP = {
   "8": "https://t.me/dianawin01bot?start=hola",
+  "186": "https://t.me/martinag186_bot?start=hola",
   "17": "https://t.me/Geraldina_bot?start=hola",
+  "42": "https://t.me/TotiLolaBot?start=hola",
   "23": "https://t.me/TotiLolaBot?start=hola"
 };
 
