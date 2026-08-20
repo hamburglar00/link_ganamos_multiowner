@@ -11,7 +11,7 @@
 
 @media (max-width: 768px) {
   :root {
-    --float-bottom: max(104px, calc(env(safe-area-inset-bottom) + 96px));
+    --float-bottom: max(62px, calc(env(safe-area-inset-bottom) + 58px));
   }
 }
 
