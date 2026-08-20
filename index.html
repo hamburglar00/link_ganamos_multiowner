@@ -261,8 +261,11 @@
         cardContainer.classList.add("gn-play-wrap");
         cardContainer.innerHTML = CONFIG.renderPlayFrame();
         setupWhatsappHint();
+        setupWhatsAppContact();
       } else {
         cardContainer.innerHTML = CONFIG.renderRescueModal();
+        setupWhatsAppContact();
+        setupTelegramLinks();
       }
     })();
 
@@ -364,7 +367,7 @@
 
     let TELEGRAM_URL = null;
 
-    (async () => {
+    async function setupTelegramLinks() {
       TELEGRAM_URL = await loadTelegramUrlForAgency(AGENCY_ID);
 
       document.querySelectorAll('a[data-telegram="1"]').forEach((a) => {
@@ -376,7 +379,7 @@
           a.dataset.enabled = "0";
         }
       });
-    })();
+    }
 
     /********************************************
      * CONTROL TELEGRAM (dinamico por agency)
@@ -395,108 +398,130 @@
     /********************************************
      * LOGICA WHATSAPP (con agency + cache por agency)
      ********************************************/
-    if (AGENCY_ID && CONFIG.whatsappServiceUrl) {
+    const WHATSAPP_MESSAGE = "Hola! Me pasas mi usuario! 🚀";
+
+    function fetchWithTimeout(url, opt = {}, ms = 2500) {
+      const ctrl = new AbortController();
+      const id = setTimeout(() => ctrl.abort(), ms);
+      return fetch(url, { ...opt, signal: ctrl.signal }).finally(() => clearTimeout(id));
+    }
+
+    function normalizeNumbers(list) {
+      return (Array.isArray(list) ? list : [])
+        .map(n => ({ phone: String(n.phone || "").trim(), weight: Number(n.weight || 1) }))
+        .filter(n => /^\+?\d{8,17}$/.test(n.phone) && n.weight > 0);
+    }
+
+    function buildWaUrl(phone, text = "") {
+      const msg = text ? encodeURIComponent(text) : "";
+      const cleanPhone = String(phone || "").replace(/\D/g, "");
+      return `https://api.whatsapp.com/send?phone=${cleanPhone}${msg ? `&text=${msg}` : ""}`;
+    }
+
+    function pickWeightedRandom(list) {
+      const total = list.reduce((s, it) => s + (Number(it.weight) || 1), 0);
+      let r = Math.random() * total;
+      for (const it of list) {
+        r -= (Number(it.weight) || 1);
+        if (r <= 0) return it;
+      }
+      return list[list.length - 1];
+    }
+
+    function parseApiPayload(data) {
+      if (data && typeof data === "object" && ("number" in data) && data.number != null) {
+        return [{ phone: String(data.number), weight: 1 }];
+      }
+      if (data && typeof data === "object" && (typeof data.phone_number === "string" || typeof data.phone_number === "number")) {
+        return [{ phone: String(data.phone_number), weight: 1 }];
+      }
+      if (typeof data === "string") return [{ phone: data, weight: 1 }];
+
+      const arr =
+        (Array.isArray(data?.numbers) && data.numbers) ||
+        (Array.isArray(data?.phone_numbers) && data.phone_numbers) ||
+        (Array.isArray(data) && data) ||
+        [];
+
+      return arr.map(item => {
+        if (typeof item === "string") return { phone: item, weight: 1 };
+        const phone = String(item?.phone ?? item?.phone_number ?? "").trim();
+        const w = Number(item?.weight ?? 1);
+        return { phone, weight: isFinite(w) && w > 0 ? w : 1 };
+      });
+    }
+
+    async function loadSupportOverrideNumbers(agencyId) {
+      try {
+        const res = await fetch(`/config/soporte.json?v=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) return [];
+
+        const rows = await res.json();
+        const row = (Array.isArray(rows) ? rows : []).find(item => Number(item?.agency_id) === Number(agencyId));
+        if (!row?.enabled) return [];
+
+        return normalizeNumbers([{ phone: row.support_number, weight: 1 }]);
+      } catch {
+        return [];
+      }
+    }
+
+    async function loadNumbersOnce() {
+      if (!AGENCY_ID || !CONFIG.whatsappServiceUrl) return [];
+
+      const supportNumbers = await loadSupportOverrideNumbers(AGENCY_ID);
+      if (supportNumbers.length) return supportNumbers;
+
       const SERVICE_URL = CONFIG.whatsappServiceUrl;
       const FALLBACK = CONFIG.whatsappFallback;
       const TTL_MS = CONFIG.whatsappTTL;
-
       const LS_KEY = `active_whatsapp_numbers_by_agency:${AGENCY_ID}`;
-
-      function fetchWithTimeout(url, opt = {}, ms = 2500) {
-        const ctrl = new AbortController();
-        const id = setTimeout(() => ctrl.abort(), ms);
-        return fetch(url, { ...opt, signal: ctrl.signal }).finally(() => clearTimeout(id));
-      }
-
-      function getCache() {
+      const cached = (() => {
         try { return JSON.parse(localStorage.getItem(LS_KEY) || "null"); }
         catch { return null; }
-      }
+      })();
 
-      function setCache(numbers) {
-        localStorage.setItem(LS_KEY, JSON.stringify({ ts: Date.now(), numbers }));
-      }
+      try {
+        const res = await fetchWithTimeout(SERVICE_URL, { headers: { "Cache-Control": "no-store" } }, 2500);
+        if (!res.ok) throw new Error("HTTP " + res.status);
 
-      function parseApiPayload(data) {
-        if (data && typeof data === "object" && ("number" in data) && data.number != null) {
-          return [{ phone: String(data.number), weight: 1 }];
+        const data = await res.json();
+        const parsed = parseApiPayload(data);
+        const clean = normalizeNumbers(parsed);
+
+        if (clean.length) {
+          localStorage.setItem(LS_KEY, JSON.stringify({ ts: Date.now(), numbers: clean }));
+          return clean;
         }
-        if (data && typeof data === "object" && (typeof data.phone_number === "string" || typeof data.phone_number === "number")) {
-          return [{ phone: String(data.phone_number), weight: 1 }];
-        }
-        if (typeof data === "string") return [{ phone: data, weight: 1 }];
+        throw new Error("Invalid payload");
+      } catch {
+        const ok = cached?.numbers?.length && (Date.now() - (cached.ts || 0) < TTL_MS);
+        if (ok) return cached.numbers;
 
-        const arr =
-          (Array.isArray(data?.numbers) && data.numbers) ||
-          (Array.isArray(data?.phone_numbers) && data.phone_numbers) ||
-          (Array.isArray(data) && data) ||
-          [];
-
-        return arr.map(item => {
-          if (typeof item === "string") return { phone: item, weight: 1 };
-          const phone = String(item?.phone ?? item?.phone_number ?? "").trim();
-          const w = Number(item?.weight ?? 1);
-          return { phone, weight: isFinite(w) && w > 0 ? w : 1 };
-        });
+        if (FALLBACK?.length) return normalizeNumbers(FALLBACK);
+        return [];
       }
+    }
 
-      function normalizeNumbers(list) {
-        return (Array.isArray(list) ? list : [])
-          .map(n => ({ phone: String(n.phone || "").trim(), weight: Number(n.weight || 1) }))
-          .filter(n => /^\+?\d{8,17}$/.test(n.phone) && n.weight > 0);
-      }
-
-      async function loadNumbersOnce() {
-        const cached = getCache();
-        try {
-          const res = await fetchWithTimeout(SERVICE_URL, { headers: { "Cache-Control": "no-store" } }, 2500);
-          if (!res.ok) throw new Error("HTTP " + res.status);
-
-          const data = await res.json();
-          const parsed = parseApiPayload(data);
-          const clean = normalizeNumbers(parsed);
-
-          if (clean.length) { setCache(clean); return clean; }
-          throw new Error("Invalid payload");
-        } catch (e) {
-          const ok = cached?.numbers?.length && (Date.now() - (cached.ts || 0) < TTL_MS);
-          if (ok) return cached.numbers;
-
-          if (FALLBACK?.length) return normalizeNumbers(FALLBACK);
-          return [];
-        }
-      }
-
-      function pickWeightedRandom(list) {
-        const total = list.reduce((s, it) => s + (Number(it.weight) || 1), 0);
-        let r = Math.random() * total;
-        for (const it of list) {
-          r -= (Number(it.weight) || 1);
-          if (r <= 0) return it;
-        }
-        return list[list.length - 1];
-      }
-
-      function buildWaUrl(phone, text = "") {
-        const msg = text ? encodeURIComponent(text) : "";
-        const cleanPhone = String(phone || "").replace(/\D/g, "");
-        return `https://api.whatsapp.com/send?phone=${cleanPhone}${msg ? `&text=${msg}` : ""}`;
-      }
+    function setupWhatsAppContact() {
+      const btnContactar = document.getElementById("btnContactar");
+      if (!btnContactar || !AGENCY_ID) return;
 
       let activeList = [];
-      loadNumbersOnce().then(list => { activeList = list; });
+      const numbersPromise = loadNumbersOnce().then(list => {
+        activeList = list;
+        return list;
+      });
 
-      const btnContactar = document.getElementById("btnContactar");
-      if (btnContactar) {
-        btnContactar.addEventListener("click", (e) => {
-          e.preventDefault();
-          if (!activeList.length) return;
+      btnContactar.addEventListener("click", async (e) => {
+        e.preventDefault();
 
-          const chosen = pickWeightedRandom(activeList);
-          const mensaje = "Hola! Me pasas mi usuario! 🚀";
-          location.href = buildWaUrl(chosen.phone, mensaje);
-        });
-      }
+        if (!activeList.length) activeList = await numbersPromise;
+        if (!activeList.length) return;
+
+        const chosen = pickWeightedRandom(activeList);
+        location.href = buildWaUrl(chosen.phone, WHATSAPP_MESSAGE);
+      });
     }
   </script>
 </body>
