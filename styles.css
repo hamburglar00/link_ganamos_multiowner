@@ -9,6 +9,12 @@
   --float-bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px));
 }
 
+@media (max-width: 768px) {
+  :root {
+    --float-bottom: max(104px, calc(env(safe-area-inset-bottom) + 96px));
+  }
+}
+
 @supports (height: 100svh) {
   :root {
     --app-height: 100svh;
