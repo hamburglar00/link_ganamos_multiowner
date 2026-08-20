@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <base href="/" />
   <title>Ganamos</title>
 
@@ -78,6 +78,27 @@
     const AGENCY_ID = getAgencyId();
     const VIEW = new URLSearchParams(window.location.search).get("view");
     const IS_PLAY_ROUTE = VIEW === "play" || /\/jugar\/\d+/.test(window.location.pathname);
+
+    function syncAppHeight() {
+      const height =
+        window.visualViewport?.height ||
+        window.innerHeight ||
+        document.documentElement.clientHeight;
+
+      if (height) {
+        document.documentElement.style.setProperty("--app-height", `${Math.round(height)}px`);
+      }
+    }
+
+    syncAppHeight();
+    window.addEventListener("resize", syncAppHeight, { passive: true });
+    window.addEventListener("orientationchange", () => window.setTimeout(syncAppHeight, 250), { passive: true });
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncAppHeight, { passive: true });
+      window.visualViewport.addEventListener("scroll", syncAppHeight, { passive: true });
+    }
+
     console.log("Agency ID:", AGENCY_ID, "| path:", location.pathname, "| search:", location.search);
   </script>
 
@@ -205,6 +226,7 @@
      ********************************************/
     const cardContainer = document.getElementById("cardContainer");
     if (IS_PLAY_ROUTE) {
+      document.documentElement.classList.add("gn-play-html");
       document.body.classList.add("gn-play-body");
       document.querySelector(".gn-stage")?.classList.add("gn-play-stage");
       cardContainer.classList.add("gn-play-wrap");
