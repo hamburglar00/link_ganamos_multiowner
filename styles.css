@@ -95,12 +95,15 @@ body {
 }
 
 .gn-play-body {
+  height: 100vh;
+  min-height: 100vh;
   overflow: hidden;
   background: #000;
 }
 
 .gn-play-stage {
   display: block;
+  height: 100vh;
   min-height: 100vh;
   background: #000;
 }
@@ -125,10 +128,30 @@ body {
   background: #000;
 }
 
+@supports (height: 100svh) {
+  .gn-play-body,
+  .gn-play-stage,
+  .gn-play-wrap,
+  .gn-play-frame {
+    height: 100svh;
+    min-height: 100svh;
+  }
+}
+
+@supports (height: 100dvh) {
+  .gn-play-body,
+  .gn-play-stage,
+  .gn-play-wrap,
+  .gn-play-frame {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+}
+
 .gn-whatsapp-float {
   position: fixed;
   left: max(18px, env(safe-area-inset-left));
-  bottom: max(34px, env(safe-area-inset-bottom));
+  bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px));
   z-index: 20;
   display: grid;
   place-items: center;
