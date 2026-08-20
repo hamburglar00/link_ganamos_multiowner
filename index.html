@@ -245,11 +245,12 @@
       const closeHintButton = document.getElementById("closeWhatsappHint");
       if (!hint) return;
 
-      let hintTimer = window.setTimeout(closeHint, 7000);
+      window.setTimeout(() => {
+        hint.classList.add("gn-whatsapp-hint-visible");
+      }, 2000);
 
       function closeHint() {
-        window.clearTimeout(hintTimer);
-        hint.classList.add("gn-whatsapp-hint-hidden");
+        hint.classList.remove("gn-whatsapp-hint-visible");
       }
 
       if (closeHintButton) {
