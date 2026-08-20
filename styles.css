@@ -41,8 +41,57 @@ body {
 .gn-wrap {
   position: relative;
   display: inline-block;
-  width: min(92vw, 520px);
+  width: min(92vw, 360px);
   margin-inline: auto;
+}
+
+.gn-rescue-mascot {
+  position: absolute;
+  z-index: 1;
+  top: -58px;
+  left: 50%;
+  width: min(42vw, 150px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.gn-rescue-card {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 350px;
+  margin: 0 auto;
+  padding: 28px 24px 22px;
+  text-align: center;
+  background: #150028;
+  border-radius: 28px;
+  box-shadow: 0 0 0 2px rgba(154, 76, 255, 0.15) inset,
+    0 14px 40px rgba(0, 0, 0, 0.65), 0 0 26px rgba(154, 76, 255, 0.35);
+}
+
+.gn-logo {
+  display: block;
+  width: min(100%, 220px);
+  margin: 0 auto 16px;
+  padding-inline: 28px;
+}
+
+.gn-title {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.gn-copy {
+  max-width: 270px;
+  margin: 14px auto 18px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: center;
 }
 
 /* === CARD PRINCIPAL === */
@@ -59,7 +108,7 @@ body {
     0 14px 40px rgba(0, 0, 0, 0.65), 0 0 26px rgba(154, 76, 255, 0.35);
 }
 
-/* === MASCOTA (centrada y detrás) === */
+/* === MASCOTA (centrada y detras) === */
 .gn-mascot {
   position: absolute;
   top: -225px;
@@ -77,7 +126,7 @@ body {
   filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.75));
 }
 
-/* === TÍTULO Y TEXTO === */
+/* === TITULO Y TEXTO === */
 .gn-header h1 {
   font-size: clamp(20px, 3.6vw, 28px);
   font-weight: 900;
@@ -98,10 +147,10 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  max-width: 220px;
-  margin: 20px auto;
+  max-width: 230px;
+  margin: 0 auto 14px;
 }
 
 /* === BOTONES BASE === */
@@ -139,26 +188,48 @@ body {
   box-shadow: 0 0 22px rgba(32, 224, 124, 0.6);
 }
 
-/* === CELESTE (Telegram) === */
-.gn-btn-telegram {
-  color: #fff;
-  background: linear-gradient(135deg, #37aee2, #1e96c8);
-  box-shadow: 0 0 16px rgba(80, 190, 255, 0.45);
-}
-.gn-btn-telegram:hover {
-  filter: saturate(1.08);
-  box-shadow: 0 0 22px rgba(80, 190, 255, 0.7);
-}
-
 /* === VIOLETA (JUGAR AHORA) === */
 .gn-btn-outline {
   color: #fff;
-  background: linear-gradient(90deg, #6f1bff, #c32bff);
-  box-shadow: 0 0 16px rgba(154, 76, 255, 0.45);
+  min-height: 42px;
+  border: 1px solid rgba(255, 188, 15, 0.55);
+  background: rgba(255, 188, 15, 0.08);
+  color: #ffbc0f;
+  box-shadow: none;
+  font-size: 13px;
 }
 .gn-btn-outline:hover {
-  box-shadow: 0 0 22px rgba(210, 75, 255, 0.65);
+  box-shadow: 0 0 16px rgba(255, 188, 15, 0.2);
   filter: saturate(1.05);
+}
+
+.gn-telegram-note {
+  max-width: 270px;
+  margin: 0 auto;
+  color: #ffbc0f;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.gn-telegram-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  margin-inline: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, #37aee2, #1e96c8);
+  box-shadow: 0 0 10px rgba(80, 190, 255, 0.32);
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.gn-telegram-link:hover {
+  filter: saturate(1.08);
+  box-shadow: 0 0 14px rgba(80, 190, 255, 0.52);
 }
 
 /* === ICONOS === */
@@ -189,22 +260,5 @@ body {
   );
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.65),
     0 0 40px rgba(154, 76, 255, 0.25);
-}
-
-/* ===== EFECTO "PULSE" EN BOTÓN JUGAR AHORA ===== */
-.gn-btn-outline {
-  animation: pulseButton 2s infinite ease-in-out;
-  transform-origin: center;
-}
-
-@keyframes pulseButton {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 10px rgba(154, 76, 255, 0.5); /* Morado suave */
-  }
-  50% {
-    transform: scale(1.07);
-    box-shadow: 0 0 20px rgba(154, 76, 255, 0.9); /* Morado brillante */
-  }
 }
 

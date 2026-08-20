@@ -1,9 +1,9 @@
 // /api/get-random-phone.js
-// ✅ API GENÉRICA
-// ✅ agency ES OBLIGATORIO (?agency=XX)
-// ❌ NO defaults
-// ✅ Plan A/B/C/D
-// ✅ Lee desde load.whatsapp
+// API GENERICA
+// agency ES OBLIGATORIO (?agency=XX)
+// NO defaults
+// Plan A/B/C/D
+// Lee desde load.whatsapp
 
 const CONFIG = {
   BRAND_NAME: "Ganamos",
@@ -92,15 +92,15 @@ export default async function handler(req, res) {
       }
     }
 
-    if (!data) throw new Error("Upstream no respondió");
+    if (!data) throw new Error("Upstream no respondio");
 
     // PLAN B: load.whatsapp
     const normalList = Array.isArray(data?.load?.whatsapp) ? data.load.whatsapp : [];
-    if (!normalList.length) throw new Error("load.whatsapp vacío");
+    if (!normalList.length) throw new Error("load.whatsapp vacio");
 
     const rawPhone = pickRandom(normalList);
     const phone = normalizePhone(rawPhone);
-    if (!phone) throw new Error("Número inválido");
+    if (!phone) throw new Error("Numero invalido");
 
     const meta = {
       agency_id: agencyId,
