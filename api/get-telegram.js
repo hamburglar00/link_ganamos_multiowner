@@ -1,33 +1,107 @@
 // /api/get-telegram.js
-// Devuelve SOLO el telegram_url de la agency solicitada
+// Devuelve el telegram_url de la agency solicitada desde random-contact.
 
-const TELEGRAM_MAP = {
-  "8": "https://t.me/dianawin01bot?start=hola",
-  "186": "https://t.me/martinag186_bot?start=hola",
-  "17": "https://t.me/Geraldina_bot?start=hola",
-  "42": "https://t.me/TotiLolaBot?start=hola",
-  "23": "https://t.me/TotiLolaBot?start=hola"
+const CONFIG = {
+  TIMEOUT_MS: 2500,
+  MAX_RETRIES: 2,
+  UPSTREAM_BASE: "https://api.asesadmin.com/api/v1",
 };
 
-export default function handler(req, res) {
+let LAST_GOOD_BY_AGENCY = Object.create(null);
+
+async function fetchJsonWithTimeout(url, timeoutMs) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      headers: { "Cache-Control": "no-store" },
+      signal: ctrl.signal,
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    return await res.json();
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+function normalizeTelegram(raw) {
+  const value = String(raw || "").trim();
+  if (!value) return null;
+
+  if (value.startsWith("https://t.me/")) return value;
+  if (value.startsWith("http://t.me/")) return value.replace("http://", "https://");
+
+  const username = value.replace(/^@/, "").trim();
+  if (!/^[a-zA-Z0-9_]{5,32}$/.test(username)) return null;
+
+  return `https://t.me/${username}?start=hola`;
+}
+
+function pickTelegram(data) {
+  const list =
+    (Array.isArray(data?.load?.telegram) && data.load.telegram) ||
+    (Array.isArray(data?.telegram) && data.telegram) ||
+    [];
+
+  for (const item of list) {
+    const url = normalizeTelegram(item);
+    if (url) return url;
+  }
+
+  return null;
+}
+
+export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store, max-age=0");
   res.setHeader("Pragma", "no-cache");
 
-  const agencyId = String(req.query.agency || "").trim();
+  const agencyId = Number(req.query.agency);
 
-  if (!agencyId) {
+  if (!Number.isInteger(agencyId) || agencyId <= 0) {
     return res.status(400).json({
-      error: "AGENCY_REQUIRED"
+      error: "AGENCY_REQUIRED",
+      message: "Debe enviarse ?agency=<id>",
     });
   }
 
-  const url = TELEGRAM_MAP[agencyId] || null;
+  const cacheKey = String(agencyId);
+  const lastGood = LAST_GOOD_BY_AGENCY[cacheKey] || null;
+  const apiUrl = `${CONFIG.UPSTREAM_BASE}/agency/${agencyId}/random-contact`;
 
-  // Validación básica
-  const valid = typeof url === "string" && url.startsWith("https://t.me/");
+  try {
+    let data = null;
+    let lastError = null;
 
-  return res.status(200).json({
-    agency_id: agencyId,
-    telegram_url: valid ? url : null
-  });
+    for (let attempt = 1; attempt <= CONFIG.MAX_RETRIES && !data; attempt++) {
+      try {
+        data = await fetchJsonWithTimeout(apiUrl, CONFIG.TIMEOUT_MS);
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (!data) throw lastError || new Error("Upstream no respondio");
+
+    const telegramUrl = pickTelegram(data);
+    if (!telegramUrl) throw new Error("Telegram no disponible");
+
+    LAST_GOOD_BY_AGENCY[cacheKey] = telegramUrl;
+
+    return res.status(200).json({
+      agency_id: agencyId,
+      telegram_url: telegramUrl,
+    });
+  } catch (err) {
+    return res.status(200).json({
+      agency_id: agencyId,
+      telegram_url: lastGood,
+      cache: Boolean(lastGood),
+      error: err?.message,
+    });
+  }
 }
