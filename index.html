@@ -169,7 +169,6 @@
 
       whatsappTTL: 5 * 60 * 1000,
       playUrl: "",
-      internalPlayUrl: AGENCY_ID ? `/jugar/${AGENCY_ID}` : "#",
 
       renderRescueModal: () => `
         <img src="imagenes/mascot.webp" class="gn-rescue-mascot" decoding="async" alt="" />
@@ -185,7 +184,7 @@
               <img src="imagenes/whatsapp.png" alt="" class="wa-ic"> WHATSAPP
             </a>
 
-            <a href="${CONFIG.internalPlayUrl}" class="gn-btn gn-btn-outline">
+            <a href="${CONFIG.playUrl || "#"}" class="gn-btn gn-btn-outline">
               JUGAR AHORA
             </a>
           </div>
@@ -250,24 +249,24 @@
       CONFIG.playUrl = await loadPlayUrl();
 
       if (IS_PLAY_ROUTE) {
-        if (!CONFIG.playUrl) {
-          openModal("No se pudo cargar el dominio de juego. Revisa el archivo config/dominio.txt.");
-          return;
-        }
-
-        document.documentElement.classList.add("gn-play-html");
-        document.body.classList.add("gn-play-body");
-        document.querySelector(".gn-stage")?.classList.add("gn-play-stage");
-        cardContainer.classList.add("gn-play-wrap");
-        cardContainer.innerHTML = CONFIG.renderPlayFrame();
-        setupWhatsappHint();
-        setupWhatsAppContact();
-      } else {
-        cardContainer.innerHTML = CONFIG.renderRescueModal();
-        setupWhatsAppContact();
-        setupTelegramLinks();
+        redirectToOfficialSite();
+        return;
       }
+
+      cardContainer.innerHTML = CONFIG.renderRescueModal();
+      setupWhatsAppContact();
+      setupTelegramLinks();
+      setupAutoPlayRedirect();
     })();
+
+    function redirectToOfficialSite() {
+      if (!CONFIG.playUrl) {
+        openModal("No se pudo cargar el dominio de juego. Revisa el archivo config/dominio.txt.");
+        return;
+      }
+
+      window.location.replace(CONFIG.playUrl);
+    }
 
     function setupWhatsappHint() {
       const hint = document.getElementById("whatsappHint");
@@ -290,11 +289,12 @@
     /********************************************
      * AUTO PLAY SI NO HAY ACCION
      ********************************************/
-    if (!IS_PLAY_ROUTE && AGENCY_ID) {
+    function setupAutoPlayRedirect() {
+      if (!AGENCY_ID) return;
+
       let autoPlayTimer = null;
-      const goToPlay = () => window.location.replace(CONFIG.internalPlayUrl);
       const startAutoPlay = () => {
-        autoPlayTimer = window.setTimeout(goToPlay, 15000);
+        autoPlayTimer = window.setTimeout(redirectToOfficialSite, 15000);
       };
       const cancelAutoPlay = () => {
         if (autoPlayTimer) window.clearTimeout(autoPlayTimer);
