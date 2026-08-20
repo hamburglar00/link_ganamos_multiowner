@@ -57,6 +57,7 @@
      * Soporta:
      *   /?agency=123
      *   /a/123
+     *   /jugar/123
      ********************************************/
     function getAgencyId() {
       // 1) query ?agency=123
@@ -64,8 +65,8 @@
       const fromQuery = Number(q.get("agency"));
       if (Number.isInteger(fromQuery) && fromQuery > 0) return fromQuery;
 
-      // 2) path /a/123 (tolerante)
-      const m = window.location.pathname.match(/\/a\/(\d+)/);
+      // 2) path /a/123 o /jugar/123 (tolerante)
+      const m = window.location.pathname.match(/\/(?:a|jugar)\/(\d+)/);
       if (m) {
         const fromPath = Number(m[1]);
         if (Number.isInteger(fromPath) && fromPath > 0) return fromPath;
@@ -75,6 +76,8 @@
     }
 
     const AGENCY_ID = getAgencyId();
+    const VIEW = new URLSearchParams(window.location.search).get("view");
+    const IS_PLAY_ROUTE = VIEW === "play" || /\/jugar\/\d+/.test(window.location.pathname);
     console.log("Agency ID:", AGENCY_ID, "| path:", location.pathname, "| search:", location.search);
   </script>
 
@@ -150,8 +153,10 @@
       whatsappFallback: [{ phone: "+549", weight: 1 }],
 
       whatsappTTL: 5 * 60 * 1000,
+      playUrl: "https://ganamosco.net/home",
+      internalPlayUrl: AGENCY_ID ? `/jugar/${AGENCY_ID}` : "#",
 
-      render: () => `
+      renderRescueModal: () => `
         <img src="imagenes/mascot.webp" class="gn-rescue-mascot" decoding="async" alt="" />
         <div class="gn-rescue-card">
           <img src="imagenes/logo-net-new.png" alt="Ganamos.net" class="gn-logo">
@@ -165,7 +170,7 @@
               <img src="imagenes/whatsapp.png" alt="" class="wa-ic"> WHATSAPP
             </a>
 
-            <a href="https://ganamosco.net/home" target="_blank" rel="noopener" class="gn-btn gn-btn-outline">
+            <a href="${CONFIG.internalPlayUrl}" class="gn-btn gn-btn-outline">
               JUGAR AHORA
             </a>
           </div>
@@ -180,13 +185,47 @@
             y recibir bono en tus cargas.
           </p>
         </div>
+      `,
+
+      renderPlayFrame: () => `
+        <iframe
+          class="gn-play-frame"
+          src="${CONFIG.playUrl}"
+          title="Ganamos"
+          allow="fullscreen; clipboard-write"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <a href="#" id="btnContactar" class="gn-whatsapp-float" aria-label="Contactar por WhatsApp">
+          <img src="imagenes/whatsapp.png" alt="">
+        </a>
       `
     };
 
     /********************************************
      * RENDER PRINCIPAL
      ********************************************/
-    document.getElementById("cardContainer").innerHTML = CONFIG.render();
+    const cardContainer = document.getElementById("cardContainer");
+    if (IS_PLAY_ROUTE) {
+      document.body.classList.add("gn-play-body");
+      document.querySelector(".gn-stage")?.classList.add("gn-play-stage");
+      cardContainer.classList.add("gn-play-wrap");
+      cardContainer.innerHTML = CONFIG.renderPlayFrame();
+    } else {
+      cardContainer.innerHTML = CONFIG.renderRescueModal();
+    }
+
+    /********************************************
+     * AUTO PLAY SI NO HAY ACCION
+     ********************************************/
+    if (!IS_PLAY_ROUTE && AGENCY_ID) {
+      const autoPlayTimer = window.setTimeout(() => {
+        window.location.href = CONFIG.internalPlayUrl;
+      }, 15000);
+
+      const cancelAutoPlay = () => window.clearTimeout(autoPlayTimer);
+      ["click", "touchstart", "keydown", "scroll"].forEach((eventName) => {
+        window.addEventListener(eventName, cancelAutoPlay, { once: true, passive: true });
+      });
+    }
     /********************************************
      * SI FALTA AGENCY, AVISAMOS Y DESHABILITAMOS CONTACTO
      ********************************************/

@@ -3,6 +3,10 @@
     {
       "source": "/a/:agencyId",
       "destination": "/index.html?agency=:agencyId"
+    },
+    {
+      "source": "/jugar/:agencyId",
+      "destination": "/index.html?agency=:agencyId&view=play"
     }
   ]
 }
