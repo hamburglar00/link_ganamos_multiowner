@@ -191,15 +191,13 @@ body {
 /* === VIOLETA (JUGAR AHORA) === */
 .gn-btn-outline {
   color: #fff;
-  min-height: 42px;
-  border: 1px solid rgba(255, 188, 15, 0.55);
-  background: rgba(255, 188, 15, 0.08);
-  color: #ffbc0f;
-  box-shadow: none;
-  font-size: 13px;
+  background: linear-gradient(90deg, #6f1bff, #c32bff);
+  box-shadow: 0 0 16px rgba(154, 76, 255, 0.45);
+  animation: pulseButton 2s infinite ease-in-out;
+  transform-origin: center;
 }
 .gn-btn-outline:hover {
-  box-shadow: 0 0 16px rgba(255, 188, 15, 0.2);
+  box-shadow: 0 0 22px rgba(210, 75, 255, 0.65);
   filter: saturate(1.05);
 }
 
@@ -230,6 +228,17 @@ body {
 .gn-telegram-link:hover {
   filter: saturate(1.08);
   box-shadow: 0 0 14px rgba(80, 190, 255, 0.52);
+}
+
+@keyframes pulseButton {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(154, 76, 255, 0.5);
+  }
+  50% {
+    transform: scale(1.07);
+    box-shadow: 0 0 20px rgba(154, 76, 255, 0.9);
+  }
 }
 
 /* === ICONOS === */
