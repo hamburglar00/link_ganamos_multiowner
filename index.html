@@ -217,12 +217,22 @@
      * AUTO PLAY SI NO HAY ACCION
      ********************************************/
     if (!IS_PLAY_ROUTE && AGENCY_ID) {
-      const autoPlayTimer = window.setTimeout(() => {
-        window.location.href = CONFIG.internalPlayUrl;
-      }, 15000);
+      let autoPlayTimer = null;
+      const goToPlay = () => window.location.replace(CONFIG.internalPlayUrl);
+      const startAutoPlay = () => {
+        autoPlayTimer = window.setTimeout(goToPlay, 15000);
+      };
+      const cancelAutoPlay = () => {
+        if (autoPlayTimer) window.clearTimeout(autoPlayTimer);
+      };
 
-      const cancelAutoPlay = () => window.clearTimeout(autoPlayTimer);
-      ["click", "touchstart", "keydown", "scroll"].forEach((eventName) => {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", startAutoPlay, { once: true });
+      } else {
+        startAutoPlay();
+      }
+
+      ["pointerdown", "touchstart", "keydown"].forEach((eventName) => {
         window.addEventListener(eventName, cancelAutoPlay, { once: true, passive: true });
       });
     }

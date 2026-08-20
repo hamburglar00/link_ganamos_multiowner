@@ -128,7 +128,7 @@ body {
 .gn-whatsapp-float {
   position: fixed;
   left: max(18px, env(safe-area-inset-left));
-  bottom: max(18px, env(safe-area-inset-bottom));
+  bottom: max(34px, env(safe-area-inset-bottom));
   z-index: 20;
   display: grid;
   place-items: center;
