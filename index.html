@@ -56,6 +56,7 @@
      * AGENCY ID DESDE URL (GENERICO, SIN DEFAULT)
      * Soporta:
      *   /?agency=123
+     *   /123
      *   /a/123
      *   /jugar/123
      ********************************************/
@@ -65,8 +66,8 @@
       const fromQuery = Number(q.get("agency"));
       if (Number.isInteger(fromQuery) && fromQuery > 0) return fromQuery;
 
-      // 2) path /a/123 o /jugar/123 (tolerante)
-      const m = window.location.pathname.match(/\/(?:a|jugar)\/(\d+)/);
+      // 2) path /123, /a/123 o /jugar/123 (tolerante)
+      const m = window.location.pathname.match(/^\/(?:(?:a|jugar)\/)?(\d+)\/?$/);
       if (m) {
         const fromPath = Number(m[1]);
         if (Number.isInteger(fromPath) && fromPath > 0) return fromPath;
