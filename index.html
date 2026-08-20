@@ -105,18 +105,11 @@
 
   <script>
     /********************************************
-     * REDIRECCION ALEATORIA (sin parpadeo)
+     * VISIBILIDAD INICIAL
      ********************************************/
-    const REDIRECT_PROBABILITY = 0;
-    const REDIRECT_URL = "https://ganamosco.net/home";
-
-    if (Math.random() < REDIRECT_PROBABILITY) {
-      window.location.replace(REDIRECT_URL);
-    } else {
-      document.addEventListener("DOMContentLoaded", () => {
-        document.documentElement.style.visibility = "visible";
-      });
-    }
+    document.addEventListener("DOMContentLoaded", () => {
+      document.documentElement.style.visibility = "visible";
+    });
   </script>
 </head>
 
@@ -175,7 +168,7 @@
       whatsappFallback: [{ phone: "+549", weight: 1 }],
 
       whatsappTTL: 5 * 60 * 1000,
-      playUrl: "https://ganamosco.net/home",
+      playUrl: "",
       internalPlayUrl: AGENCY_ID ? `/jugar/${AGENCY_ID}` : "#",
 
       renderRescueModal: () => `
@@ -226,20 +219,52 @@
       `
     };
 
+    async function loadPlayUrl() {
+      try {
+        const res = await fetch(`/config/dominio.txt?v=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) throw new Error("No se pudo cargar config/dominio.txt");
+
+        const rawDomain = (await res.text()).trim();
+        const cleanDomain = rawDomain
+          .replace(/^["']|["']$/g, "")
+          .replace(/\/+$/, "")
+          .replace(/^(?!https?:\/\/)/, "https://");
+        if (!cleanDomain) throw new Error("config/dominio.txt esta vacio");
+
+        new URL(cleanDomain);
+
+        if (cleanDomain.endsWith("/home")) return cleanDomain;
+        return `${cleanDomain}/home`;
+      } catch (err) {
+        console.error("Error cargando config/dominio.txt:", err);
+        return "";
+      }
+    }
+
     /********************************************
      * RENDER PRINCIPAL
      ********************************************/
     const cardContainer = document.getElementById("cardContainer");
-    if (IS_PLAY_ROUTE) {
-      document.documentElement.classList.add("gn-play-html");
-      document.body.classList.add("gn-play-body");
-      document.querySelector(".gn-stage")?.classList.add("gn-play-stage");
-      cardContainer.classList.add("gn-play-wrap");
-      cardContainer.innerHTML = CONFIG.renderPlayFrame();
-      setupWhatsappHint();
-    } else {
-      cardContainer.innerHTML = CONFIG.renderRescueModal();
-    }
+
+    (async () => {
+      CONFIG.playUrl = await loadPlayUrl();
+
+      if (IS_PLAY_ROUTE) {
+        if (!CONFIG.playUrl) {
+          openModal("No se pudo cargar el dominio de juego. Revisa el archivo config/dominio.txt.");
+          return;
+        }
+
+        document.documentElement.classList.add("gn-play-html");
+        document.body.classList.add("gn-play-body");
+        document.querySelector(".gn-stage")?.classList.add("gn-play-stage");
+        cardContainer.classList.add("gn-play-wrap");
+        cardContainer.innerHTML = CONFIG.renderPlayFrame();
+        setupWhatsappHint();
+      } else {
+        cardContainer.innerHTML = CONFIG.renderRescueModal();
+      }
+    })();
 
     function setupWhatsappHint() {
       const hint = document.getElementById("whatsappHint");
