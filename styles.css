@@ -527,6 +527,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 9px;
   width: min(100%, 240px);
   min-height: 50px;
   padding: 12px 18px;
@@ -538,6 +539,13 @@ body {
   font-weight: 900;
   line-height: 1;
   text-decoration: none;
+}
+
+.gn-migration-telegram-icon {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  fill: currentColor;
 }
 
 .gn-migration-cta:hover {
