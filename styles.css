@@ -389,6 +389,7 @@ body {
   justify-content: center;
   padding: 18px;
   background: rgba(0, 0, 0, 0.72);
+  overflow: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -400,11 +401,11 @@ body {
 .gn-migration-dialog {
   position: relative;
   width: min(92vw, 390px);
-  max-height: min(86vh, 680px);
-  overflow-y: auto;
+  max-height: min(86vh, 620px);
+  overflow: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 28px 22px 22px;
+  padding: 24px 22px 20px;
   border: 1px solid rgba(55, 174, 226, 0.42);
   border-radius: 20px;
   color: #fff;
@@ -437,7 +438,7 @@ body {
 }
 
 .gn-migration-kicker {
-  margin-bottom: 10px;
+  margin-bottom: 9px;
   color: #ffbc0f;
   font-size: 15px;
   font-weight: 900;
@@ -446,7 +447,7 @@ body {
 }
 
 .gn-migration-title {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   color: #fff;
   font-size: 20px;
   font-weight: 900;
@@ -461,15 +462,15 @@ body {
 .gn-migration-body {
   width: 100%;
   max-width: 326px;
-  margin: 0 auto 14px;
-  padding: 14px 14px 2px;
+  margin: 0 auto 12px;
+  padding: 12px 14px 1px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.07);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .gn-migration-copy {
-  margin: 0 auto 12px;
+  margin: 0 auto 11px;
   max-width: 320px;
   color: #f3ecff;
   font-size: 13px;
@@ -478,7 +479,7 @@ body {
 }
 
 .gn-migration-download {
-  margin: 2px auto 16px;
+  margin: 2px auto 14px;
   max-width: 310px;
   color: #d7ccf8;
   font-size: 12px;
@@ -545,22 +546,39 @@ body {
   .gn-migration-modal {
     align-items: center;
     padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
-    overflow-y: auto;
+    overflow: hidden;
   }
 
   .gn-migration-dialog {
     width: 100%;
     max-height: calc(100dvh - 28px);
     margin: 12px auto;
-    padding: 26px 18px 20px;
+    padding: 22px 16px 18px;
+  }
+
+  .gn-migration-kicker {
+    font-size: 14px;
   }
 
   .gn-migration-title {
-    font-size: 18px;
+    font-size: 17px;
+    margin-bottom: 9px;
+  }
+
+  .gn-migration-body {
+    margin-bottom: 10px;
+    padding: 10px 12px 0;
   }
 
   .gn-migration-copy {
-    font-size: 12.5px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    line-height: 1.36;
+  }
+
+  .gn-migration-download {
+    margin-bottom: 12px;
+    font-size: 11.5px;
   }
 
   .gn-migration-cta {
