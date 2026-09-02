@@ -5,6 +5,7 @@
     "ttl.al_cerrar_horas define por cuantas horas no se vuelve a mostrar si el jugador lo cierra. Usar 0 para mostrar siempre al cargar.",
     "ttl.al_clickear_telegram_dias define por cuantos dias no se vuelve a mostrar si el jugador toca IR A TELEGRAM. Usar 0 para mostrar siempre al cargar.",
     "ttl.no_volver_a_mostrar_dias se usa solo si no_volver_a_mostrar.enabled esta en true.",
+    "auto_cerrar_segundos cierra automaticamente el popup si el jugador no hace nada. Usar 0 para desactivar.",
     "no_volver_a_mostrar.enabled muestra u oculta el checkbox No volver a mostrar.",
     "El popup solo aparece si esa agency_id tiene Telegram asignado por API o por config/telegram.json."
   ],
@@ -14,6 +15,7 @@
     "al_clickear_telegram_dias": 3,
     "no_volver_a_mostrar_dias": 7
   },
+  "auto_cerrar_segundos": 15,
   "no_volver_a_mostrar": {
     "enabled": true,
     "label": "No volver a mostrar"

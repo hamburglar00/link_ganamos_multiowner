@@ -204,6 +204,7 @@
         closeTtlMs: 24 * 60 * 60 * 1000,
         clickTtlMs: 30 * 24 * 60 * 60 * 1000,
         neverTtlMs: 365 * 24 * 60 * 60 * 1000,
+        autoCloseMs: 15 * 1000,
         neverEnabled: false,
         neverLabel: "No volver a mostrar",
         downloadLinks: {
@@ -460,6 +461,7 @@
           closeTtlMs: nonNegativeNumber(ttl.al_cerrar_horas, 24) * 60 * 60 * 1000,
           clickTtlMs: nonNegativeNumber(ttl.al_clickear_telegram_dias, 30) * 24 * 60 * 60 * 1000,
           neverTtlMs: nonNegativeNumber(ttl.no_volver_a_mostrar_dias, 365) * 24 * 60 * 60 * 1000,
+          autoCloseMs: nonNegativeNumber(data?.auto_cerrar_segundos, 15) * 1000,
           neverEnabled: noVolver.enabled === true,
           neverLabel: String(noVolver.label || defaults.neverLabel),
           downloadLinks: {
@@ -526,6 +528,7 @@
       if (!shouldShowTelegramMigrationPopup(config)) return false;
 
       const modal = document.getElementById("telegramMigrationModal");
+      const dialog = modal?.querySelector(".gn-migration-dialog");
       const closeButton = document.getElementById("closeTelegramMigrationModal");
       const cta = document.getElementById("telegramMigrationCta");
       const downloadText = document.getElementById("telegramDownloadText");
@@ -555,10 +558,12 @@
       writeTelegramPopupState({ viewed_at: Date.now() });
       modal.style.display = "flex";
       modal.setAttribute("aria-hidden", "false");
+      let autoCloseTimer = null;
 
       const dismiss = (reason) => {
         if (!telegramMigrationPopupOpen) return;
 
+        if (autoCloseTimer) window.clearTimeout(autoCloseTimer);
         telegramMigrationPopupOpen = false;
         modal.style.display = "none";
         modal.setAttribute("aria-hidden", "true");
@@ -572,6 +577,15 @@
 
         if (typeof onDismiss === "function") onDismiss();
       };
+
+      if (config.autoCloseMs > 0) {
+        autoCloseTimer = window.setTimeout(() => dismiss("auto"), config.autoCloseMs);
+      }
+
+      dialog?.addEventListener("pointerdown", () => {
+        if (autoCloseTimer) window.clearTimeout(autoCloseTimer);
+        autoCloseTimer = null;
+      }, { once: true });
 
       closeButton.addEventListener("click", () => dismiss("close"), { once: true });
       modal.addEventListener("click", (e) => {
