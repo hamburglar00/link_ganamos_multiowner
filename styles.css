@@ -438,7 +438,7 @@ body {
 }
 
 .gn-migration-kicker {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   color: #ffbc0f;
   font-size: 15px;
   font-weight: 900;
@@ -447,7 +447,7 @@ body {
 }
 
 .gn-migration-title {
-  margin-bottom: 14px;
+  margin-bottom: 20px;
   color: #fff;
   font-size: 20px;
   font-weight: 900;
@@ -462,11 +462,11 @@ body {
 .gn-migration-body {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 28px;
   width: 100%;
   max-width: 326px;
-  margin: 0 auto 16px;
-  padding: 15px 14px;
+  margin: 0 auto 22px;
+  padding: 18px 16px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.07);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
@@ -482,7 +482,7 @@ body {
 }
 
 .gn-migration-download {
-  margin: 2px auto 16px;
+  margin: 2px auto 20px;
   max-width: 310px;
   color: #d7ccf8;
   font-size: 12px;
@@ -506,7 +506,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 20px;
   color: #fff;
   font-size: 12px;
   font-weight: 800;
@@ -561,18 +561,18 @@ body {
 
   .gn-migration-kicker {
     font-size: 14px;
-    margin-bottom: 11px;
+    margin-bottom: 14px;
   }
 
   .gn-migration-title {
     font-size: 17px;
-    margin-bottom: 13px;
+    margin-bottom: 17px;
   }
 
   .gn-migration-body {
-    gap: 18px;
-    margin-bottom: 14px;
-    padding: 13px 12px;
+    gap: 22px;
+    margin-bottom: 18px;
+    padding: 15px 13px;
   }
 
   .gn-migration-copy {
@@ -581,7 +581,7 @@ body {
   }
 
   .gn-migration-download {
-    margin-bottom: 14px;
+    margin-bottom: 17px;
     font-size: 11.5px;
   }
 
