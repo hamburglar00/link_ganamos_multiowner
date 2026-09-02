@@ -134,14 +134,16 @@
         <span>SEGUI EN CONTACTO CON TU</span>
         <span>CAJERO DE CONFIANZA</span>
       </h2>
-      <p class="gn-migration-copy">
-        Debido a los bloqueos frecuentes de WhatsApp, estamos trasladando nuestra atencion a Telegram, un canal mas estable y seguro.
-      </p>
-      <p class="gn-migration-copy">
-        Asi vas a poder seguir jugando con tranquilidad, mantener siempre el contacto con tu cajero habitual y evitar perfiles falsos o posibles estafas.
-      </p>
+      <div class="gn-migration-body">
+        <p class="gn-migration-copy">
+          Debido a los bloqueos frecuentes de WhatsApp, estamos trasladando nuestra atencion a Telegram, un canal mas estable y seguro.
+        </p>
+        <p class="gn-migration-copy">
+          Asi vas a poder seguir jugando con tranquilidad, mantener siempre el contacto con tu cajero y evitar perfiles falsos o estafas.
+        </p>
+      </div>
       <p class="gn-migration-download" id="telegramDownloadText">
-        Si todavia no tenes Telegram, podes <a href="https://telegram.org/dl" id="telegramDownloadLink" target="_blank" rel="noopener">descargarlo aca</a>.
+        ¿No tenes Telegram? <a href="https://telegram.org/dl" id="telegramDownloadLink" target="_blank" rel="noopener">Descargalo aca</a>
       </p>
       <label class="gn-migration-check" id="telegramMigrationNeverWrapper" hidden>
         <input type="checkbox" id="telegramMigrationNever">
@@ -534,9 +536,9 @@
       const downloadTarget = getTelegramDownloadTarget(config);
       if (downloadText && downloadLink) {
         downloadLink.href = downloadTarget.url;
-        downloadLink.textContent = "descargarlo aca";
-        downloadText.textContent = "Si todavia no tenes Telegram, podes ";
-        downloadText.append(downloadLink, document.createTextNode(` desde ${downloadTarget.storeName}.`));
+        downloadLink.textContent = "Descargalo aca";
+        downloadText.textContent = "¿No tenes Telegram? ";
+        downloadText.append(downloadLink);
       }
 
       if (neverWrapper && neverCheckbox && neverLabel) {
