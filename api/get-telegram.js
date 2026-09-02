@@ -108,17 +108,6 @@ export default async function handler(req, res) {
   const apiUrl = `${CONFIG.UPSTREAM_BASE}/agency/${agencyId}/random-contact`;
 
   try {
-    const manualTelegramUrl = await getManualTelegramUrl(agencyId);
-    if (manualTelegramUrl) {
-      LAST_GOOD_BY_AGENCY[cacheKey] = manualTelegramUrl;
-
-      return res.status(200).json({
-        agency_id: agencyId,
-        telegram_url: manualTelegramUrl,
-        source: "config/telegram.json",
-      });
-    }
-
     let data = null;
     let lastError = null;
 
@@ -133,15 +122,42 @@ export default async function handler(req, res) {
     if (!data) throw lastError || new Error("Upstream no respondio");
 
     const telegramUrl = pickTelegram(data);
-    if (!telegramUrl) throw new Error("Telegram no disponible");
+    if (telegramUrl) {
+      LAST_GOOD_BY_AGENCY[cacheKey] = telegramUrl;
 
-    LAST_GOOD_BY_AGENCY[cacheKey] = telegramUrl;
+      return res.status(200).json({
+        agency_id: agencyId,
+        telegram_url: telegramUrl,
+        source: "api",
+      });
+    }
 
-    return res.status(200).json({
-      agency_id: agencyId,
-      telegram_url: telegramUrl,
-    });
+    const manualTelegramUrl = await getManualTelegramUrl(agencyId);
+    if (manualTelegramUrl) {
+      LAST_GOOD_BY_AGENCY[cacheKey] = manualTelegramUrl;
+
+      return res.status(200).json({
+        agency_id: agencyId,
+        telegram_url: manualTelegramUrl,
+        source: "config/telegram.json",
+      });
+    }
+
+    throw new Error("Telegram no disponible");
   } catch (err) {
+    const manualTelegramUrl = await getManualTelegramUrl(agencyId);
+    if (manualTelegramUrl) {
+      LAST_GOOD_BY_AGENCY[cacheKey] = manualTelegramUrl;
+
+      return res.status(200).json({
+        agency_id: agencyId,
+        telegram_url: manualTelegramUrl,
+        source: "config/telegram.json",
+        fallback: true,
+        error: err?.message,
+      });
+    }
+
     return res.status(200).json({
       agency_id: agencyId,
       telegram_url: lastGood,

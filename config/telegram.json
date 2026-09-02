@@ -4,9 +4,16 @@
     "agency_ids debe tener IDs numericos reales. Estos ejemplos usan IDs 1000+ para no afectar agencias existentes.",
     "telegram acepta @usuario, usuario, https://t.me/usuario o http://t.me/usuario.",
     "enabled: false desactiva el grupo. Para activarlo, usar enabled: true o quitar el campo enabled.",
-    "Si una agency_id no aparece aca, el sistema sigue buscando el Telegram en la API externa como antes."
+    "La API externa tiene prioridad. Este archivo se usa solo cuando la API no trae Telegram para esa agency_id.",
+    "Si una agency_id no aparece aca y la API tampoco trae Telegram, se muestra el mensaje de Telegram no disponible."
   ],
   "grupos": [
+    {
+      "nombre": "Toti Lola",
+      "agency_ids": [42, 52],
+      "telegram": "@TotiLolaBot",
+      "enabled": true
+    },
     {
       "nombre": "Ejemplo gerencia A, B y C",
       "agency_ids": [1001, 1002, 1003],
