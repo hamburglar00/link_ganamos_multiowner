@@ -2,20 +2,20 @@
   "_comentario": [
     "Configura el popup de migracion a Telegram.",
     "enabled: false apaga el popup completo sin tocar codigo.",
-    "ttl.al_cerrar_horas define por cuantas horas no se vuelve a mostrar si el jugador lo cierra.",
-    "ttl.al_clickear_telegram_dias define por cuantos dias no se vuelve a mostrar si el jugador toca IR A TELEGRAM.",
+    "ttl.al_cerrar_horas define por cuantas horas no se vuelve a mostrar si el jugador lo cierra. Usar 0 para mostrar siempre al cargar.",
+    "ttl.al_clickear_telegram_dias define por cuantos dias no se vuelve a mostrar si el jugador toca IR A TELEGRAM. Usar 0 para mostrar siempre al cargar.",
     "ttl.no_volver_a_mostrar_dias se usa solo si no_volver_a_mostrar.enabled esta en true.",
     "no_volver_a_mostrar.enabled muestra u oculta el checkbox No volver a mostrar.",
     "El popup solo aparece si esa agency_id tiene Telegram asignado por API o por config/telegram.json."
   ],
   "enabled": true,
   "ttl": {
-    "al_cerrar_horas": 24,
-    "al_clickear_telegram_dias": 30,
-    "no_volver_a_mostrar_dias": 365
+    "al_cerrar_horas": 0,
+    "al_clickear_telegram_dias": 3,
+    "no_volver_a_mostrar_dias": 7
   },
   "no_volver_a_mostrar": {
-    "enabled": false,
+    "enabled": true,
     "label": "No volver a mostrar"
   },
   "descarga": {

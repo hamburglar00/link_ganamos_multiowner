@@ -509,6 +509,10 @@ body {
   line-height: 1.2;
 }
 
+.gn-migration-check[hidden] {
+  display: none !important;
+}
+
 .gn-migration-check input {
   width: 16px;
   height: 16px;

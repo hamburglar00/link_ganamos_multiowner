@@ -436,9 +436,9 @@
       applyTelegramLinks();
     }
 
-    function positiveNumber(value, fallback) {
+    function nonNegativeNumber(value, fallback) {
       const number = Number(value);
-      return Number.isFinite(number) && number > 0 ? number : fallback;
+      return Number.isFinite(number) && number >= 0 ? number : fallback;
     }
 
     async function loadTelegramPopupConfig() {
@@ -455,9 +455,9 @@
 
         return {
           enabled: data?.enabled !== false,
-          closeTtlMs: positiveNumber(ttl.al_cerrar_horas, 24) * 60 * 60 * 1000,
-          clickTtlMs: positiveNumber(ttl.al_clickear_telegram_dias, 30) * 24 * 60 * 60 * 1000,
-          neverTtlMs: positiveNumber(ttl.no_volver_a_mostrar_dias, 365) * 24 * 60 * 60 * 1000,
+          closeTtlMs: nonNegativeNumber(ttl.al_cerrar_horas, 24) * 60 * 60 * 1000,
+          clickTtlMs: nonNegativeNumber(ttl.al_clickear_telegram_dias, 30) * 24 * 60 * 60 * 1000,
+          neverTtlMs: nonNegativeNumber(ttl.no_volver_a_mostrar_dias, 365) * 24 * 60 * 60 * 1000,
           neverEnabled: noVolver.enabled === true,
           neverLabel: String(noVolver.label || defaults.neverLabel),
           downloadLinks: {
@@ -543,6 +543,7 @@
 
       if (neverWrapper && neverCheckbox && neverLabel) {
         neverWrapper.hidden = !config.neverEnabled;
+        neverWrapper.style.display = config.neverEnabled ? "" : "none";
         neverLabel.textContent = config.neverLabel;
         neverCheckbox.checked = false;
       }
