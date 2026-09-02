@@ -1,0 +1,23 @@
+{
+  "_comentario": [
+    "Cada item dentro de grupos vincula una o varias agency_id al mismo Telegram.",
+    "agency_ids debe tener IDs numericos reales. Estos ejemplos usan IDs 1000+ para no afectar agencias existentes.",
+    "telegram acepta @usuario, usuario, https://t.me/usuario o http://t.me/usuario.",
+    "enabled: false desactiva el grupo. Para activarlo, usar enabled: true o quitar el campo enabled.",
+    "Si una agency_id no aparece aca, el sistema sigue buscando el Telegram en la API externa como antes."
+  ],
+  "grupos": [
+    {
+      "nombre": "Ejemplo gerencia A, B y C",
+      "agency_ids": [1001, 1002, 1003],
+      "telegram": "@telegram_gerencia_1",
+      "enabled": false
+    },
+    {
+      "nombre": "Ejemplo gerencia D y E",
+      "agency_ids": [1004, 1005],
+      "telegram": "@telegram_gerencia_2",
+      "enabled": false
+    }
+  ]
+}

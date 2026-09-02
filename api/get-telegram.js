@@ -1,10 +1,14 @@
 // /api/get-telegram.js
 // Devuelve el telegram_url de la agency solicitada desde random-contact.
 
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 const CONFIG = {
   TIMEOUT_MS: 2500,
   MAX_RETRIES: 2,
   UPSTREAM_BASE: "https://api.asesadmin.com/api/v1",
+  MANUAL_TELEGRAM_PATH: path.join(process.cwd(), "config", "telegram.json"),
 };
 
 let LAST_GOOD_BY_AGENCY = Object.create(null);
@@ -42,6 +46,36 @@ function normalizeTelegram(raw) {
   return `https://t.me/${username}?start=hola`;
 }
 
+async function loadManualTelegramRows() {
+  try {
+    const raw = await readFile(CONFIG.MANUAL_TELEGRAM_PATH, "utf8");
+    const config = JSON.parse(raw);
+
+    if (Array.isArray(config)) return config;
+    if (Array.isArray(config?.grupos)) return config.grupos;
+    if (Array.isArray(config?.groups)) return config.groups;
+
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+async function getManualTelegramUrl(agencyId) {
+  const rows = await loadManualTelegramRows();
+  const row = rows.find((item) => {
+    if (item?.enabled === false) return false;
+
+    const agencyIds = Array.isArray(item?.agency_ids)
+      ? item.agency_ids
+      : [item?.agency_id];
+
+    return agencyIds.some((id) => Number(id) === Number(agencyId));
+  });
+
+  return normalizeTelegram(row?.telegram_url || row?.telegram || row?.username);
+}
+
 function pickTelegram(data) {
   const list =
     (Array.isArray(data?.load?.telegram) && data.load.telegram) ||
@@ -74,6 +108,17 @@ export default async function handler(req, res) {
   const apiUrl = `${CONFIG.UPSTREAM_BASE}/agency/${agencyId}/random-contact`;
 
   try {
+    const manualTelegramUrl = await getManualTelegramUrl(agencyId);
+    if (manualTelegramUrl) {
+      LAST_GOOD_BY_AGENCY[cacheKey] = manualTelegramUrl;
+
+      return res.status(200).json({
+        agency_id: agencyId,
+        telegram_url: manualTelegramUrl,
+        source: "config/telegram.json",
+      });
+    }
+
     let data = null;
     let lastError = null;
 
