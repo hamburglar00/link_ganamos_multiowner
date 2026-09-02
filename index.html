@@ -126,6 +126,32 @@
     </div>
   </div>
 
+  <div id="telegramMigrationModal" class="gn-migration-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="gn-migration-dialog">
+      <button id="closeTelegramMigrationModal" class="gn-migration-close" type="button" aria-label="Cerrar">X</button>
+      <img src="imagenes/logo-net-new.png" alt="Ganamos.net" class="gn-migration-logo">
+      <p class="gn-migration-kicker">AVISO IMPORTANTE</p>
+      <h2 class="gn-migration-title">🔒 Segui en contacto con tu cajero de confianza</h2>
+      <p class="gn-migration-copy">
+        Debido a los bloqueos frecuentes de WhatsApp, estamos trasladando nuestra atencion a Telegram, un canal mas estable y seguro.
+      </p>
+      <p class="gn-migration-copy">
+        Asi vas a poder seguir jugando con tranquilidad, mantener siempre el contacto con tu cajero habitual y evitar perfiles falsos o posibles estafas.
+      </p>
+      <p class="gn-migration-copy gn-migration-important">
+        Importante: comunicate unicamente desde el enlace oficial que aparece a continuacion.
+      </p>
+      <p class="gn-migration-download" id="telegramDownloadText">
+        Si todavia no tenes Telegram, podes <a href="https://telegram.org/dl" id="telegramDownloadLink" target="_blank" rel="noopener">descargarlo aca</a>.
+      </p>
+      <label class="gn-migration-check" id="telegramMigrationNeverWrapper" hidden>
+        <input type="checkbox" id="telegramMigrationNever">
+        <span id="telegramMigrationNeverLabel">No volver a mostrar</span>
+      </label>
+      <a href="#" id="telegramMigrationCta" class="gn-migration-cta" target="_blank" rel="noopener">CONTINUAR POR TELEGRAM</a>
+    </div>
+  </div>
+
   <script>
     /********************************************
      * HELPERS MODAL
@@ -169,6 +195,20 @@
 
       whatsappTTL: 5 * 60 * 1000,
       playUrl: "",
+      telegramPopupConfigUrl: "/config/telegram-popup.json",
+      telegramPopupDefaults: {
+        enabled: true,
+        closeTtlMs: 24 * 60 * 60 * 1000,
+        clickTtlMs: 30 * 24 * 60 * 60 * 1000,
+        neverTtlMs: 365 * 24 * 60 * 60 * 1000,
+        neverEnabled: false,
+        neverLabel: "No volver a mostrar",
+        downloadLinks: {
+          ios: "https://apps.apple.com/app/telegram-messenger/id686449807",
+          android: "https://play.google.com/store/apps/details?id=org.telegram.messenger",
+          default: "https://telegram.org/dl"
+        }
+      },
 
       renderRescueModal: () => `
         <img src="imagenes/mascot.webp" class="gn-rescue-mascot" decoding="async" alt="" />
@@ -255,8 +295,13 @@
 
       cardContainer.innerHTML = CONFIG.renderRescueModal();
       setupWhatsAppContact();
-      setupTelegramLinks();
-      setupAutoPlayRedirect();
+      await setupTelegramLinks();
+
+      const popupShown = await setupTelegramMigrationPopup({
+        onDismiss: setupAutoPlayRedirect
+      });
+
+      if (!popupShown) setupAutoPlayRedirect();
     })();
 
     function redirectToOfficialSite() {
@@ -366,6 +411,7 @@
     }
 
     let TELEGRAM_URL = null;
+    let telegramMigrationPopupOpen = false;
 
     async function setupTelegramLinks() {
       TELEGRAM_URL = await loadTelegramUrlForAgency(AGENCY_ID);
@@ -379,6 +425,151 @@
           a.dataset.enabled = "0";
         }
       });
+    }
+
+    function positiveNumber(value, fallback) {
+      const number = Number(value);
+      return Number.isFinite(number) && number > 0 ? number : fallback;
+    }
+
+    async function loadTelegramPopupConfig() {
+      const defaults = CONFIG.telegramPopupDefaults;
+
+      try {
+        const res = await fetch(`${CONFIG.telegramPopupConfigUrl}?v=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) throw new Error("No se pudo cargar config/telegram-popup.json");
+
+        const data = await res.json();
+        const ttl = data?.ttl || {};
+        const noVolver = data?.no_volver_a_mostrar || {};
+        const descarga = data?.descarga || {};
+
+        return {
+          enabled: data?.enabled !== false,
+          closeTtlMs: positiveNumber(ttl.al_cerrar_horas, 24) * 60 * 60 * 1000,
+          clickTtlMs: positiveNumber(ttl.al_clickear_telegram_dias, 30) * 24 * 60 * 60 * 1000,
+          neverTtlMs: positiveNumber(ttl.no_volver_a_mostrar_dias, 365) * 24 * 60 * 60 * 1000,
+          neverEnabled: noVolver.enabled === true,
+          neverLabel: String(noVolver.label || defaults.neverLabel),
+          downloadLinks: {
+            ios: String(descarga.ios || defaults.downloadLinks.ios),
+            android: String(descarga.android || defaults.downloadLinks.android),
+            default: String(descarga.default || defaults.downloadLinks.default)
+          }
+        };
+      } catch {
+        return defaults;
+      }
+    }
+
+    function getTelegramPopupStorageKey() {
+      return `telegram_migration_popup:v1:${AGENCY_ID}`;
+    }
+
+    function readTelegramPopupState() {
+      try {
+        return JSON.parse(localStorage.getItem(getTelegramPopupStorageKey()) || "{}") || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function writeTelegramPopupState(nextState) {
+      try {
+        const state = { ...readTelegramPopupState(), ...nextState };
+        localStorage.setItem(getTelegramPopupStorageKey(), JSON.stringify(state));
+      } catch {}
+    }
+
+    function isWithinTtl(ts, ttlMs) {
+      return Number.isFinite(ts) && Date.now() - ts < ttlMs;
+    }
+
+    function shouldShowTelegramMigrationPopup(config) {
+      if (!config.enabled || !AGENCY_ID || !TELEGRAM_URL) return false;
+
+      const state = readTelegramPopupState();
+      if (isWithinTtl(Number(state.never_at), config.neverTtlMs)) return false;
+      if (isWithinTtl(Number(state.clicked_at), config.clickTtlMs)) return false;
+      if (isWithinTtl(Number(state.closed_at), config.closeTtlMs)) return false;
+
+      return true;
+    }
+
+    function getTelegramDownloadTarget(config) {
+      const ua = navigator.userAgent || "";
+      const platform = navigator.platform || "";
+      const isIOS = /iPad|iPhone|iPod/i.test(ua) || (platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const isAndroid = /Android/i.test(ua);
+
+      if (isIOS) return { storeName: "App Store", url: config.downloadLinks.ios };
+      if (isAndroid) return { storeName: "Play Store", url: config.downloadLinks.android };
+
+      return { storeName: "la tienda oficial", url: config.downloadLinks.default };
+    }
+
+    async function setupTelegramMigrationPopup({ onDismiss } = {}) {
+      if (!AGENCY_ID || !TELEGRAM_URL) return false;
+
+      const config = await loadTelegramPopupConfig();
+      if (!shouldShowTelegramMigrationPopup(config)) return false;
+
+      const modal = document.getElementById("telegramMigrationModal");
+      const closeButton = document.getElementById("closeTelegramMigrationModal");
+      const cta = document.getElementById("telegramMigrationCta");
+      const downloadText = document.getElementById("telegramDownloadText");
+      const downloadLink = document.getElementById("telegramDownloadLink");
+      const neverWrapper = document.getElementById("telegramMigrationNeverWrapper");
+      const neverCheckbox = document.getElementById("telegramMigrationNever");
+      const neverLabel = document.getElementById("telegramMigrationNeverLabel");
+      if (!modal || !closeButton || !cta) return false;
+
+      const downloadTarget = getTelegramDownloadTarget(config);
+      if (downloadText && downloadLink) {
+        downloadLink.href = downloadTarget.url;
+        downloadLink.textContent = "descargarlo aca";
+        downloadText.textContent = "Si todavia no tenes Telegram, podes ";
+        downloadText.append(downloadLink, document.createTextNode(` desde ${downloadTarget.storeName}.`));
+      }
+
+      if (neverWrapper && neverCheckbox && neverLabel) {
+        neverWrapper.hidden = !config.neverEnabled;
+        neverLabel.textContent = config.neverLabel;
+        neverCheckbox.checked = false;
+      }
+
+      cta.href = TELEGRAM_URL;
+      telegramMigrationPopupOpen = true;
+      writeTelegramPopupState({ viewed_at: Date.now() });
+      modal.style.display = "flex";
+      modal.setAttribute("aria-hidden", "false");
+
+      const dismiss = (reason) => {
+        if (!telegramMigrationPopupOpen) return;
+
+        telegramMigrationPopupOpen = false;
+        modal.style.display = "none";
+        modal.setAttribute("aria-hidden", "true");
+
+        const checkedNever = config.neverEnabled && neverCheckbox?.checked;
+        const nextState = {};
+        if (reason === "cta") nextState.clicked_at = Date.now();
+        if (reason === "close") nextState.closed_at = Date.now();
+        if (checkedNever) nextState.never_at = Date.now();
+        writeTelegramPopupState(nextState);
+
+        if (typeof onDismiss === "function") onDismiss();
+      };
+
+      closeButton.addEventListener("click", () => dismiss("close"), { once: true });
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) dismiss("close");
+      });
+      cta.addEventListener("click", () => {
+        dismiss("cta");
+      }, { once: true });
+
+      return true;
     }
 
     /********************************************
