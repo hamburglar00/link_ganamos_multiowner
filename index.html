@@ -129,17 +129,16 @@
   <div id="telegramMigrationModal" class="gn-migration-modal" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="gn-migration-dialog">
       <button id="closeTelegramMigrationModal" class="gn-migration-close" type="button" aria-label="Cerrar">X</button>
-      <img src="imagenes/logo-net-new.png" alt="Ganamos.net" class="gn-migration-logo">
       <p class="gn-migration-kicker">AVISO IMPORTANTE</p>
-      <h2 class="gn-migration-title">🔒 Segui en contacto con tu cajero de confianza</h2>
+      <h2 class="gn-migration-title">
+        <span>SEGUI EN CONTACTO CON TU</span>
+        <span>CAJERO DE CONFIANZA</span>
+      </h2>
       <p class="gn-migration-copy">
         Debido a los bloqueos frecuentes de WhatsApp, estamos trasladando nuestra atencion a Telegram, un canal mas estable y seguro.
       </p>
       <p class="gn-migration-copy">
         Asi vas a poder seguir jugando con tranquilidad, mantener siempre el contacto con tu cajero habitual y evitar perfiles falsos o posibles estafas.
-      </p>
-      <p class="gn-migration-copy gn-migration-important">
-        Importante: comunicate unicamente desde el enlace oficial que aparece a continuacion.
       </p>
       <p class="gn-migration-download" id="telegramDownloadText">
         Si todavia no tenes Telegram, podes <a href="https://telegram.org/dl" id="telegramDownloadLink" target="_blank" rel="noopener">descargarlo aca</a>.
@@ -293,16 +292,21 @@
         return;
       }
 
-      cardContainer.innerHTML = CONFIG.renderRescueModal();
-      setupWhatsAppContact();
-      await setupTelegramLinks();
+      TELEGRAM_URL = await loadTelegramUrlForAgency(AGENCY_ID);
 
       const popupShown = await setupTelegramMigrationPopup({
-        onDismiss: setupAutoPlayRedirect
+        onDismiss: renderRescueExperience
       });
 
-      if (!popupShown) setupAutoPlayRedirect();
+      if (!popupShown) renderRescueExperience();
     })();
+
+    function renderRescueExperience() {
+      cardContainer.innerHTML = CONFIG.renderRescueModal();
+      setupWhatsAppContact();
+      applyTelegramLinks();
+      setupAutoPlayRedirect();
+    }
 
     function redirectToOfficialSite() {
       if (!CONFIG.playUrl) {
@@ -413,9 +417,7 @@
     let TELEGRAM_URL = null;
     let telegramMigrationPopupOpen = false;
 
-    async function setupTelegramLinks() {
-      TELEGRAM_URL = await loadTelegramUrlForAgency(AGENCY_ID);
-
+    function applyTelegramLinks() {
       document.querySelectorAll('a[data-telegram="1"]').forEach((a) => {
         if (TELEGRAM_URL) {
           a.href = TELEGRAM_URL;
@@ -425,6 +427,11 @@
           a.dataset.enabled = "0";
         }
       });
+    }
+
+    async function setupTelegramLinks() {
+      TELEGRAM_URL = await loadTelegramUrlForAgency(AGENCY_ID);
+      applyTelegramLinks();
     }
 
     function positiveNumber(value, fallback) {
